@@ -1,6 +1,7 @@
 import './style.css';
 import { BoardScene } from './scene.js';
 import { LocalController, NetController, ONLINE_AVAILABLE } from './controllers.js';
+import { TutorialController } from './tutorial.js';
 import { checkPlacement, computeScores, rankings } from '../shared/engine.js';
 import { PLAYER_COLORS, cardCanvas, symbolSwatch } from './art.js';
 import { playPlace, playTurn, playEnd } from './sound.js';
@@ -82,6 +83,7 @@ function leaveToMenu() {
   app.info = null;
   app.scene?.clearGhost();
   app.scene?.highlightCells(null);
+  renderCoach(null);
   history.replaceState(null, '', location.pathname);
   showScreen('menu');
 }
@@ -89,14 +91,33 @@ function leaveToMenu() {
 // ---------- menu actions ----------
 $('name').value = localStorage.getItem('stratum:name') || '';
 
-$('btn-solo').onclick = () => {
-  const c = new LocalController({
-    name: playerName(),
-    opponents: Number($('solo-opponents').value),
-    difficulty: $('solo-difficulty').value,
-  });
+function startSolo(opponents, difficulty) {
+  const c = new LocalController({ name: playerName(), opponents, difficulty });
   useController(c);
   c.start();
+}
+
+$('btn-solo').onclick = () => startSolo(Number($('solo-opponents').value), $('solo-difficulty').value);
+
+function startTutorial() {
+  const c = new TutorialController({ name: playerName() });
+  useController(c);
+  c.start();
+}
+
+$('btn-tutorial').onclick = startTutorial;
+$('coach-next').onclick = () => app.controller?.next?.();
+$('coach-skip').onclick = () => {
+  localStorage.setItem('stratum:tutorialDone', '1');
+  leaveToMenu();
+};
+$('coach-play').onclick = () => {
+  localStorage.setItem('stratum:tutorialDone', '1');
+  startSolo(1, 'easy');
+};
+$('coach-menu').onclick = () => {
+  localStorage.setItem('stratum:tutorialDone', '1');
+  leaveToMenu();
 };
 
 $('btn-create').onclick = () => {
@@ -143,6 +164,40 @@ $('btn-copy').onclick = async () => {
   }
 };
 
+// ---------- tutorial coach panel ----------
+function setCoachCollapsed(on) {
+  $('coach').classList.toggle('collapsed', on);
+  $('coach-collapse').textContent = on ? '▸' : '▾';
+  $('coach-collapse').setAttribute('aria-expanded', String(!on));
+  $('coach-collapse').title = on ? 'Expand' : 'Collapse';
+}
+$('coach-collapse').onclick = () => setCoachCollapsed(!$('coach').classList.contains('collapsed'));
+
+function renderCoach(t) {
+  document.querySelectorAll('.coach-glow').forEach((e) => e.classList.remove('coach-glow'));
+  app.coachCells = t?.cells || null;
+  document.body.classList.toggle('in-tutorial', !!t);
+  document.body.classList.toggle('tut-show-sb', t?.ui === '#scoreboard');
+  $('coach').classList.toggle('hidden', !t);
+  if (!t) return;
+  $('coach-step').textContent = `Step ${t.step} of ${t.total}`;
+  if (app.coachStep !== t.step) {
+    setCoachCollapsed(false); // reopen on each new step
+    clearTimeout(toastTimer);
+    $('toast').classList.add('hidden'); // drop leftover errors from the previous step
+  }
+  app.coachStep = t.step;
+  $('coach-title').textContent = t.title;
+  $('coach-text').innerHTML = t.text; // static strings from tutorial.js
+  $('coach-progress').style.width = `${(100 * t.step) / t.total}%`;
+  $('coach-next').classList.toggle('hidden', !t.canNext);
+  $('coach-wait').classList.toggle('hidden', !t.waiting);
+  $('coach-finish').classList.toggle('hidden', !t.finish);
+  $('coach-skip').classList.toggle('hidden', t.finish);
+  if (t.ui) document.querySelector(t.ui)?.classList.add('coach-glow');
+  app.scene.highlightCells(t.cells, '#ffffff');
+}
+
 // ---------- updates ----------
 function onUpdate(info) {
   app.info = info;
@@ -155,6 +210,7 @@ function onUpdate(info) {
   if (!hand.some((c) => c.id === app.selectedId)) app.selectedId = hand[0]?.id ?? null;
   app.touchPreview = null;
   renderHUD();
+  renderCoach(info.tutorial);
   updateGhost();
 
   const turnKey = `${view.gameId}:${view.moveNumber}`;
@@ -200,6 +256,7 @@ function renderLobby(info) {
   $('btn-start').textContent = info.seats.length < 2 ? 'Need 2+ players' : `Start game (${info.seats.length} players)`;
 }
 
+const TOUCH = window.matchMedia('(pointer: coarse)').matches;
 const isMyTurn = () => app.info && !app.info.view.over && app.info.view.turn === app.info.seat;
 
 function renderHUD() {
@@ -222,14 +279,15 @@ function renderHUD() {
       el('span', 'sb-meta', `group ${scores[i].largest} · gems ${scores[i].gems} · cards ${p.handCount + p.deckCount}`),
     );
     row.onmouseenter = () => app.scene.highlightCells(scores[i].group, PLAYER_COLORS[i]);
-    row.onmouseleave = () => app.scene.highlightCells(null);
+    row.onmouseleave = () => app.scene.highlightCells(app.coachCells, '#ffffff');
     sb.append(row);
   });
 
   // Turn banner
   const banner = $('turn-banner');
   banner.classList.toggle('mine', isMyTurn());
-  if (view.over) banner.textContent = 'Game over';
+  if (app.info.mode === 'tutorial') banner.textContent = view.turn === seat ? 'Tutorial' : 'Tutor is playing…';
+  else if (view.over) banner.textContent = 'Game over';
   else if (isMyTurn()) banner.textContent = 'Your turn';
   else {
     const p = view.players[view.turn];
@@ -283,13 +341,21 @@ function updateGhost() {
   const cell = app.touchPreview || app.hover;
   const hint = $('hint');
   $('btn-confirm').classList.add('hidden');
+  if (app.info.tutorial && (app.info.tutorial.canNext || app.info.tutorial.finish || app.info.tutorial.waiting)) {
+    // Reading step: no placing, so no preview or placement hints.
+    app.scene.clearGhost();
+    hint.textContent = '';
+    return;
+  }
   if (!card || !cell || view.over) {
     app.scene.clearGhost();
     if (!view.over && card) {
       hint.textContent = isMyTurn()
         ? view.moveNumber === 0
           ? 'Place the first card over the centre square'
-          : 'Pick a card, aim at the board, click to place'
+          : TOUCH
+            ? 'Pick a card, then tap a square to preview it'
+            : 'Pick a card, aim at the board, click to place'
         : '';
     }
     return;

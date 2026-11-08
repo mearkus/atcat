@@ -14,6 +14,7 @@
     <section id="menu" class="screen panel">
       <h1 class="logo">STRATUM</h1>
       <p class="tagline">Stack cards. Bury rivals. Claim the biggest territory.</p>
+      <button id="btn-tutorial" class="tutorial-cta">New here? <b>Play the tutorial</b> →</button>
       <label class="field">
         <span>Your name</span>
         <input id="name" maxlength="16" placeholder="Player" autocomplete="nickname" />
@@ -77,6 +78,24 @@
 
     <!-- In-game HUD -->
     <div id="hud" class="hidden">
+      <div id="coach" class="panel hidden" role="dialog" aria-live="polite">
+        <div class="coach-bar"><div id="coach-progress"></div></div>
+        <div id="coach-step" class="muted"></div>
+        <div class="coach-head">
+          <h3 id="coach-title"></h3>
+          <button id="coach-collapse" class="link" aria-expanded="true" title="Collapse">▾</button>
+        </div>
+        <p id="coach-text"></p>
+        <div class="coach-actions">
+          <button id="coach-skip" class="link">Skip tutorial</button>
+          <span id="coach-wait" class="muted hidden">Tutor is placing a card…</span>
+          <button id="coach-next" class="primary">Next</button>
+          <div id="coach-finish" class="row hidden">
+            <button id="coach-play" class="primary">Play vs AI</button>
+            <button id="coach-menu">Menu</button>
+          </div>
+        </div>
+      </div>
       <div id="scoreboard" class="panel"></div>
       <div id="turn-banner"></div>
       <div id="top-buttons">
