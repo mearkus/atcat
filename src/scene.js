@@ -424,6 +424,8 @@ export class BoardScene {
       for (const c of g.children) if (c.userData.spin) c.rotation.y = t * 0.8;
     }
     if (this.centerRing) this.centerRing.visible = this._lastMoveNumber === 0;
+    const hl = this.highlightGroup.children[0];
+    if (hl) hl.material.opacity = 0.3 + 0.2 * Math.sin(t * 4);
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
   }

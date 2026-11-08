@@ -493,7 +493,135 @@ button.link.inline {
   color: #f2c14e;
 }
 
+/* ---------- Tutorial ---------- */
+.tutorial-cta {
+  background: linear-gradient(90deg, rgba(228, 87, 46, 0.18), rgba(42, 183, 202, 0.18));
+  border-color: rgba(255, 255, 255, 0.18);
+  font-size: 14px;
+}
+
+#coach {
+  position: absolute;
+  top: 62px;
+  right: 12px;
+  width: min(340px, calc(100vw - 24px));
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 5;
+}
+
+.coach-bar {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+#coach-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #e4572e, #2ab7ca);
+  transition: width 0.3s;
+}
+
+#coach h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.coach-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+#coach-collapse {
+  padding: 0 4px;
+  font-size: 18px;
+  color: var(--muted);
+}
+
+#coach.collapsed #coach-text,
+#coach.collapsed #coach-step,
+#coach.collapsed .coach-bar,
+#coach.collapsed #coach-skip {
+  display: none;
+}
+
+#coach p {
+  margin: 4px 0 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.coach-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.coach-actions .link {
+  padding-left: 0;
+}
+
+#coach-finish {
+  flex: 1;
+}
+
+.coach-glow {
+  animation: coach-glow 1.2s ease-in-out infinite alternate;
+  border-radius: 12px;
+}
+
+@keyframes coach-glow {
+  from {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25), 0 0 8px rgba(255, 255, 255, 0.15);
+  }
+  to {
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 0 22px rgba(255, 255, 255, 0.45);
+  }
+}
+
 @media (max-width: 640px) {
+  #coach {
+    top: 56px;
+    right: 8px;
+    left: 8px;
+    width: auto;
+    padding: 8px 12px 6px;
+    gap: 2px;
+  }
+  #coach h3 {
+    font-size: 15px;
+  }
+  #coach p {
+    font-size: 12.5px;
+    line-height: 1.4;
+    margin: 0 0 2px;
+  }
+  #coach-step {
+    display: none;
+  }
+  .coach-actions button {
+    padding: 5px 12px;
+    font-size: 14px;
+  }
+  /* The coach takes the scoreboard's place, except on the scoring step. */
+  body.in-tutorial #scoreboard {
+    display: none;
+  }
+  body.in-tutorial.tut-show-sb #scoreboard {
+    display: flex;
+  }
+  body.tut-show-sb #coach {
+    top: auto;
+    bottom: 12px;
+  }
+
   #scoreboard {
     top: 60px;
     left: 8px;

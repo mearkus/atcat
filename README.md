@@ -6,6 +6,13 @@ Play **solo against AI opponents** or **online with friends** (2–4 players), w
 Stratum is an original design in the overlapping-card genre. Players lay domino-shaped cards onto a
 shared grid, stacking them on top of each other to build territory and bury their rivals.
 
+## Tutorial
+
+New players can pick **Play the tutorial** from the main menu. It's an interactive, 9-step game against a
+scripted "Tutor" opponent that teaches one rule per step: the first card, touching, burying, flat
+placement, stone, and scoring. Each step checks that your move actually practises that rule. The
+tutorial runs fully in the browser, so it works on the GitHub Pages build too.
+
 ## Rules
 
 Each card has two halves. A half is either **your colour**, your colour with a **gem**, or neutral **stone**.
@@ -62,6 +69,7 @@ server/index.js    static file server + WebSocket rooms (authoritative)
 src/scene.js       three.js board, cards, placement preview, animations
 src/art.js         card face artwork (canvas), player colours and symbols
 src/controllers.js LocalController (solo) and NetController (online) behind one interface
+src/tutorial.js    TutorialController: scripted step-by-step lessons against "Tutor"
 src/main.js        menus, lobby, HUD and input
 test/              node:test suite for the engine and AI
 ```
