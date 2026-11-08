@@ -113,6 +113,20 @@
       </div>
     </div>
 
+    <!-- Sound settings (always available) -->
+    <button id="btn-audio" title="Sound settings">🔊</button>
+    <div id="audio-panel" class="panel hidden">
+      <label class="field">
+        <span>Music</span>
+        <input id="vol-music" type="range" min="0" max="100" step="1" />
+      </label>
+      <label class="field">
+        <span>Effects</span>
+        <input id="vol-sfx" type="range" min="0" max="100" step="1" />
+      </label>
+      <label class="check"><input id="audio-mute" type="checkbox" /> Mute all <span class="muted">(M)</span></label>
+    </div>
+
     <div id="toast" class="hidden"></div>
 
     <!-- Game over -->
@@ -150,6 +164,7 @@
           <li>Pick a card, hover the board, click to place. <b>R</b> or Shift+scroll rotates. <b>1–3</b> select cards.</li>
           <li>Right-drag orbits the camera, scroll zooms. On touch: tap to preview, then tap <b>Place</b>.</li>
           <li>Hover a player in the scoreboard to highlight their largest group.</li>
+          <li><b>M</b> mutes sound. Use 🔊 to adjust music and effects volume.</li>
         </ul>
         <button id="btn-rules-close" class="primary">Got it</button>
       </div>

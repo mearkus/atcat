@@ -279,7 +279,7 @@ export class BoardScene {
       if (animate && lm && lm.card.id === id) {
         const targetY = g.position.y;
         g.position.y += 2.5;
-        this.anims.push({ obj: g, from: g.position.y, to: targetY, t: 0, dur: 0.38, onDone: () => this.onLand?.() });
+        this.anims.push({ obj: g, from: g.position.y, to: targetY, t: 0, dur: 0.38, onDone: () => this.onLand?.(id) });
       }
     }
     this._markLast(lm);

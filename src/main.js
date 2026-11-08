@@ -4,7 +4,7 @@ import { LocalController, NetController, ONLINE_AVAILABLE } from './controllers.
 import { TutorialController } from './tutorial.js';
 import { checkPlacement, computeScores, rankings } from '../shared/engine.js';
 import { PLAYER_COLORS, cardCanvas, symbolSwatch } from './art.js';
-import { playPlace, playTurn, playEnd } from './sound.js';
+import { audio, unlockOnGesture } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => {
@@ -32,10 +32,13 @@ function showScreen(name) {
   $('lobby').classList.toggle('hidden', name !== 'lobby');
   $('hud').classList.toggle('hidden', name !== 'game');
   if (name !== 'game') $('gameover').classList.add('hidden');
+  document.body.classList.toggle('in-game', name === 'game');
+  if (name !== 'game') audio.setMood('menu');
 }
 
 let toastTimer;
 function toast(msg, kind = 'error') {
+  if (kind === 'error') audio.invalid();
   const t = $('toast');
   t.textContent = msg;
   t.className = kind === 'info' ? 'info' : '';
@@ -53,7 +56,13 @@ function ensureScene() {
     onClick: (c, pointerType) => onBoardClick(c, pointerType),
     onRotate: (d) => rotate(d),
   });
-  app.scene.onLand = playPlace;
+  app.scene.onLand = (cardId) => {
+    const sfx = app.pendingLand?.get(cardId);
+    if (sfx) {
+      app.pendingLand.delete(cardId);
+      audio.place(sfx);
+    }
+  };
   return app.scene;
 }
 
@@ -184,6 +193,7 @@ function renderCoach(t) {
   $('coach-step').textContent = `Step ${t.step} of ${t.total}`;
   if (app.coachStep !== t.step) {
     setCoachCollapsed(false); // reopen on each new step
+    if (app.coachStep != null) audio.step();
     clearTimeout(toastTimer);
     $('toast').classList.add('hidden'); // drop leftover errors from the previous step
   }
@@ -199,6 +209,59 @@ function renderCoach(t) {
   app.scene.highlightCells(t.cells, '#ffffff');
 }
 
+// ---------- audio ----------
+// Work out what the newest move did (bury? gem? height?) so the landing sound
+// can reflect it. Played when the card's drop animation lands.
+function queueMoveSound(view, seat) {
+  const tops = view.board.map((s) => (s.length ? s[s.length - 1].p : null));
+  const lm = view.lastMove;
+  const key = lm && `${view.gameId}:${view.moveNumber}`;
+  if (lm && app.prevTops && key !== app.lastMoveKey && app.prevGameId === view.gameId) {
+    const fp = [
+      [lm.x, lm.y],
+      [lm.x + [1, 0, -1, 0][lm.rot], lm.y + [0, 1, 0, -1][lm.rot]],
+    ];
+    const idx = fp.map(([x, y]) => y * view.size + x);
+    const bury = idx.some((i) => app.prevTops[i] != null && app.prevTops[i] >= 0 && app.prevTops[i] !== lm.seat);
+    const level = view.board[idx[0]].length - 1;
+    app.pendingLand = app.pendingLand || new Map();
+    app.pendingLand.set(lm.card.id, { level, mine: lm.seat === seat, bury, gem: lm.card.cells.includes('g') });
+  }
+  app.lastMoveKey = key;
+  app.prevGameId = view.gameId;
+  app.prevTops = tops;
+}
+
+function syncAudioPanel() {
+  const { music, sfx, muted } = audio.settings;
+  $('vol-music').value = Math.round(music * 100);
+  $('vol-sfx').value = Math.round(sfx * 100);
+  $('audio-mute').checked = muted;
+  $('btn-audio').textContent = muted || (music === 0 && sfx === 0) ? '🔇' : '🔊';
+  $('btn-audio').title = muted ? 'Sound off (M)' : 'Sound settings (M to mute)';
+}
+audio.onChange(syncAudioPanel);
+syncAudioPanel();
+unlockOnGesture();
+$('btn-audio').onclick = (e) => {
+  e.stopPropagation();
+  $('audio-panel').classList.toggle('hidden');
+};
+$('vol-music').oninput = (e) => audio.set({ music: e.target.value / 100, muted: false });
+$('vol-sfx').oninput = (e) => audio.set({ sfx: e.target.value / 100, muted: false });
+$('vol-sfx').onchange = () => audio.select(); // sample the new effects level
+$('audio-mute').onchange = (e) => audio.set({ muted: e.target.checked });
+document.addEventListener('pointerdown', (e) => {
+  if (!$('audio-panel').classList.contains('hidden') && !e.target.closest('#audio-panel, #btn-audio')) {
+    $('audio-panel').classList.add('hidden');
+  }
+});
+// Soft click for UI buttons (board and card clicks have their own sounds).
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (b && !b.closest('#hand') && b.id !== 'btn-rotate' && b.id !== 'btn-confirm') audio.click();
+});
+
 // ---------- updates ----------
 function onUpdate(info) {
   app.info = info;
@@ -206,7 +269,9 @@ function onUpdate(info) {
   if (!info.started) return renderLobby(info);
   showScreen('game');
   const view = info.view;
+  queueMoveSound(view, info.seat);
   ensureScene().setState(view);
+  audio.setMood(view.over ? 'end' : 'game');
   const hand = view.players[info.seat]?.hand || [];
   if (!hand.some((c) => c.id === app.selectedId)) app.selectedId = hand[0]?.id ?? null;
   app.touchPreview = null;
@@ -217,7 +282,7 @@ function onUpdate(info) {
   const turnKey = `${view.gameId}:${view.moveNumber}`;
   if (turnKey !== app.lastTurnKey) {
     app.lastTurnKey = turnKey;
-    if (view.turn === info.seat && !view.over && view.moveNumber > 0) playTurn();
+    if (view.turn === info.seat && !view.over && view.moveNumber > 0 && !info.tutorial) audio.turn();
   }
   if (view.over && app.shownGameOver !== view.gameId) {
     app.shownGameOver = view.gameId;
@@ -320,6 +385,7 @@ function renderHand() {
 }
 
 function selectCard(id) {
+  if (id !== app.selectedId) audio.select();
   app.selectedId = id;
   renderHand();
   updateGhost();
@@ -327,6 +393,7 @@ function selectCard(id) {
 
 function rotate(d = 1) {
   app.rot = (app.rot + d + 4) % 4;
+  audio.rotate();
   updateGhost();
 }
 
@@ -398,8 +465,12 @@ $('btn-confirm').onclick = () => tryPlace(app.touchPreview);
 
 window.addEventListener('keydown', (e) => {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
-  if (!app.info?.started) return;
-  if (e.key === 'r' || e.key === 'R') rotate(e.shiftKey ? -1 : 1);
+  if (!app.info?.started) {
+    if (e.key === 'm' || e.key === 'M') audio.toggleMute();
+    return;
+  }
+  if (e.key === 'm' || e.key === 'M') audio.toggleMute();
+  else if (e.key === 'r' || e.key === 'R') rotate(e.shiftKey ? -1 : 1);
   else if (e.key === 'Escape') {
     $('rules').classList.add('hidden');
     app.touchPreview = null;
@@ -431,7 +502,7 @@ function showGameOver() {
   $('btn-again').classList.toggle('hidden', !canRestart);
   $('go-wait').classList.toggle('hidden', canRestart);
   $('gameover').classList.remove('hidden');
-  playEnd(won);
+  audio.end(won);
 }
 
 // ---------- boot ----------
