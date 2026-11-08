@@ -2,7 +2,9 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main, claude/tacta-3js-game-b74lah]
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -32,13 +34,17 @@ jobs:
           VITE_STATIC: '1'
           VITE_SERVER_URL: ${{ vars.STRATUM_SERVER_URL }}
       - uses: actions/configure-pages@v5
+        if: github.ref == 'refs/heads/main'
         with:
           enablement: true
       - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
         with:
           path: dist
 
   deploy:
+    # Pull requests only build and test; Pages deploys come from main.
+    if: github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     environment:
