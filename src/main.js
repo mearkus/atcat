@@ -106,6 +106,7 @@ function startTutorial() {
 }
 
 $('btn-tutorial').onclick = startTutorial;
+if (localStorage.getItem('stratum:tutorialDone')) $('btn-tutorial').innerHTML = '<b>Replay the tutorial</b> →';
 $('coach-next').onclick = () => app.controller?.next?.();
 $('coach-skip').onclick = () => {
   localStorage.setItem('stratum:tutorialDone', '1');
