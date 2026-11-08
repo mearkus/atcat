@@ -1,0 +1,22 @@
+{
+  "name": "stratum",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Stratum - a 3D card-stacking territory game (three.js) with online multiplayer and AI opponents",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "dev:client": "vite",
+    "dev:server": "node --watch server/index.js",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "three": "^0.187.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "vite": "^8.0.0"
+  }
+}

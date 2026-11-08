@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#1b1f2a" />
+    <title>Stratum</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect x='2' y='14' width='28' height='8' rx='2' fill='%232ab7ca'/><rect x='6' y='8' width='20' height='8' rx='2' fill='%23e4572e'/></svg>" />
+  </head>
+  <body>
+    <div id="stage"></div>
+
+    <!-- Main menu -->
+    <section id="menu" class="screen panel">
+      <h1 class="logo">STRATUM</h1>
+      <p class="tagline">Stack cards. Bury rivals. Claim the biggest territory.</p>
+      <label class="field">
+        <span>Your name</span>
+        <input id="name" maxlength="16" placeholder="Player" autocomplete="nickname" />
+      </label>
+
+      <div class="block">
+        <h2>Solo</h2>
+        <div class="row">
+          <label class="field small">
+            <span>Opponents</span>
+            <select id="solo-opponents">
+              <option value="1">1 AI</option>
+              <option value="2">2 AI</option>
+              <option value="3">3 AI</option>
+            </select>
+          </label>
+          <label class="field small">
+            <span>Difficulty</span>
+            <select id="solo-difficulty">
+              <option value="easy">Easy</option>
+              <option value="normal" selected>Normal</option>
+              <option value="hard">Hard</option>
+            </select>
+          </label>
+        </div>
+        <button id="btn-solo" class="primary">Play solo</button>
+      </div>
+
+      <div class="block">
+        <h2>Online</h2>
+        <button id="btn-create" class="primary">Create room</button>
+        <div class="row join-row">
+          <input id="join-code" maxlength="4" placeholder="CODE" autocapitalize="characters" />
+          <button id="btn-join">Join</button>
+        </div>
+      </div>
+
+      <button id="btn-rules" class="link">How to play</button>
+    </section>
+
+    <!-- Lobby -->
+    <section id="lobby" class="screen panel hidden">
+      <h2>Room <span id="lobby-code" class="code"></span></h2>
+      <p class="muted">Share the code or <button id="btn-copy" class="link inline">copy invite link</button></p>
+      <ul id="lobby-seats" class="seats"></ul>
+      <div id="lobby-host" class="hidden">
+        <div class="row">
+          <select id="lobby-ai-diff">
+            <option value="easy">Easy</option>
+            <option value="normal" selected>Normal</option>
+            <option value="hard">Hard</option>
+          </select>
+          <button id="btn-add-ai">Add AI</button>
+        </div>
+        <button id="btn-start" class="primary">Start game</button>
+      </div>
+      <p id="lobby-wait" class="muted hidden">Waiting for the host to start…</p>
+      <button id="btn-leave-lobby" class="link">Leave room</button>
+    </section>
+
+    <!-- In-game HUD -->
+    <div id="hud" class="hidden">
+      <div id="scoreboard" class="panel"></div>
+      <div id="turn-banner"></div>
+      <div id="top-buttons">
+        <button id="btn-camera" title="Reset camera">⟲</button>
+        <button id="btn-help" title="How to play">?</button>
+        <button id="btn-menu" title="Leave game">✕</button>
+      </div>
+      <div id="hand-bar">
+        <div id="hand"></div>
+        <div id="hand-actions">
+          <button id="btn-rotate" title="Rotate (R)">⟳ Rotate</button>
+          <button id="btn-confirm" class="primary hidden">Place</button>
+        </div>
+        <div id="hint" class="muted"></div>
+      </div>
+    </div>
+
+    <div id="toast" class="hidden"></div>
+
+    <!-- Game over -->
+    <div id="gameover" class="modal hidden">
+      <div class="panel">
+        <h2 id="go-title"></h2>
+        <table id="go-table"></table>
+        <div class="row">
+          <button id="btn-again" class="primary">Play again</button>
+          <button id="btn-go-menu">Menu</button>
+        </div>
+        <p id="go-wait" class="muted hidden">Waiting for the host to start a rematch…</p>
+      </div>
+    </div>
+
+    <!-- Rules -->
+    <div id="rules" class="modal hidden">
+      <div class="panel rules">
+        <h2>How to play</h2>
+        <p>Each card is a domino with two halves. A half is either <b>your colour</b>, your colour with a <b>gem</b>, or neutral <b>stone</b>.</p>
+        <ol>
+          <li>On your turn, play one of the 3 cards in your hand, then draw a new one. Everyone has a 12-card deck.</li>
+          <li>The first card must cover the <b>centre square</b>. After that, a card must <b>overlap</b> or <b>touch</b> a card already on the board.</li>
+          <li>Cards must lie <b>flat</b>: both halves have to land on stacks of the same height. Stacks are at most <b>3</b> cards tall.</li>
+          <li>You can't completely cover a single card. Each new card has to straddle a seam or open ground.</li>
+        </ol>
+        <p>Only the <b>top</b> of each stack counts. When nobody can play, you score:</p>
+        <ul>
+          <li><b>1 point</b> per square in your largest connected group (orthogonal)</li>
+          <li><b>2 points</b> per gem of yours still visible anywhere</li>
+        </ul>
+        <p class="muted">Ties go to whoever has more visible squares. Use stone to cut rival groups apart.</p>
+        <h3>Controls</h3>
+        <ul class="muted">
+          <li>Pick a card, hover the board, click to place. <b>R</b> or Shift+scroll rotates. <b>1–3</b> select cards.</li>
+          <li>Right-drag orbits the camera, scroll zooms. On touch: tap to preview, then tap <b>Place</b>.</li>
+          <li>Hover a player in the scoreboard to highlight their largest group.</li>
+        </ul>
+        <button id="btn-rules-close" class="primary">Got it</button>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
