@@ -70,6 +70,17 @@ export class LocalController {
   }
 }
 
+// Static hosts (e.g. GitHub Pages) can't run the game server. Builds made with
+// VITE_STATIC=1 hide online play unless VITE_SERVER_URL points at a server.
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || '';
+export const ONLINE_AVAILABLE = !!SERVER_URL || !import.meta.env.VITE_STATIC;
+
+function serverUrl() {
+  if (SERVER_URL) return SERVER_URL.replace(/^http/, 'ws').replace(/\/?$/, '/ws').replace(/\/ws\/ws$/, '/ws');
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  return `${proto}://${location.host}/ws`;
+}
+
 const tokenKey = (code) => `stratum:token:${code}`;
 
 export class NetController {
@@ -84,8 +95,7 @@ export class NetController {
   }
 
   _connect() {
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-    const ws = (this.ws = new WebSocket(`${proto}://${location.host}/ws`));
+    const ws = (this.ws = new WebSocket(serverUrl()));
     ws.onopen = () => {
       this.retries = 0;
       for (const m of this.queue.splice(0)) ws.send(JSON.stringify(m));

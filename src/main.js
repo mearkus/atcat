@@ -1,6 +1,6 @@
 import './style.css';
 import { BoardScene } from './scene.js';
-import { LocalController, NetController } from './controllers.js';
+import { LocalController, NetController, ONLINE_AVAILABLE } from './controllers.js';
 import { checkPlacement, computeScores, rankings } from '../shared/engine.js';
 import { PLAYER_COLORS, cardCanvas, symbolSwatch } from './art.js';
 import { playPlace, playTurn, playEnd } from './sound.js';
@@ -369,7 +369,9 @@ function showGameOver() {
 
 // ---------- boot ----------
 showScreen('menu');
-const roomParam = new URLSearchParams(location.search).get('room');
+$('online-block').classList.toggle('hidden', !ONLINE_AVAILABLE);
+$('online-off').classList.toggle('hidden', ONLINE_AVAILABLE);
+const roomParam = ONLINE_AVAILABLE && new URLSearchParams(location.search).get('room');
 if (roomParam) {
   $('join-code').value = roomParam.toUpperCase();
   if (localStorage.getItem('stratum:name')) joinCode(roomParam);
