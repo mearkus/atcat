@@ -61,9 +61,11 @@ const STEPS = [
     title: 'Touch the board',
     text:
       'Every later card must <b>touch</b> or <b>overlap</b> a card on the board. Place this one flat on empty squares, next to a card. ' +
-      (TOUCH ? 'Use <b>⟳ Rotate</b> to turn it.' : 'Press <b>R</b> or use <b>⟳ Rotate</b> to turn it.'),
+      (TOUCH
+        ? 'Tap the card in your hand to <b>rotate</b> it.'
+        : 'Click the card in your hand (or press <b>R</b>) to <b>rotate</b> it.'),
     hand: () => [card('c', 'g')],
-    ui: '#btn-rotate',
+    ui: '#hand',
     goal: (before, after, m) => cellsOf(before, m).every((s) => s.length === 0),
     goalHint: 'For this step, place the card flat on empty squares, touching a card.',
     bot: 'touch',

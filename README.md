@@ -35,7 +35,7 @@ Ties go to whoever has more visible squares.
 | --- | --- | --- |
 | Select card | Click a card or press `1`–`3` | Tap a card |
 | Place | Hover the board, click | Tap to preview, then tap **Place** (or tap the same square again) |
-| Rotate | `R` / `Shift+R`, Shift+scroll, ⟳ button | ⟳ button |
+| Rotate | Click the selected card again, its ⟳ badge, `R` / `Shift+R`, Shift+scroll | Tap the selected card again or its ⟳ badge |
 | Camera | Right-drag to orbit, scroll to zoom | Two-finger gestures |
 | Show a player's largest group | Hover their row in the scoreboard | |
 | Mute / unmute | `M` | 🔊 button |

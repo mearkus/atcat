@@ -19,7 +19,9 @@ const app = {
   info: null,
   scene: null,
   selectedId: null,
-  rot: 0,
+  rot: 0, // rotation of the selected card (0-3)
+  turns: new Map(), // cardId -> accumulated quarter turns (for smooth hand animation)
+  viewTurns: 0, // camera azimuth in accumulated quarter turns
   hover: null,
   touchPreview: null,
   shownGameOver: null,
@@ -56,6 +58,14 @@ function ensureScene() {
     onClick: (c, pointerType) => onBoardClick(c, pointerType),
     onRotate: (d) => rotate(d),
   });
+  app.scene.onViewTurn = (q) => {
+    // Accumulate the shortest step so hand cards never spin the long way round.
+    let d = (((q - (app.lastViewQ ?? q)) % 4) + 4) % 4;
+    if (d === 3) d = -1;
+    app.lastViewQ = q;
+    app.viewTurns += d;
+    updateHandTransforms();
+  };
   app.scene.onLand = (cardId) => {
     const sfx = app.pendingLand?.get(cardId);
     if (sfx) {
@@ -274,6 +284,8 @@ function onUpdate(info) {
   audio.setMood(view.over ? 'end' : 'game');
   const hand = view.players[info.seat]?.hand || [];
   if (!hand.some((c) => c.id === app.selectedId)) app.selectedId = hand[0]?.id ?? null;
+  for (const id of app.turns.keys()) if (!hand.some((c) => c.id === id)) app.turns.delete(id);
+  app.rot = rotOf(app.selectedId);
   app.touchPreview = null;
   renderHUD();
   renderCoach(info.tutorial);
@@ -370,31 +382,67 @@ function renderHand() {
   const handEl = $('hand');
   handEl.innerHTML = '';
   const hand = view.players[seat]?.hand || [];
+  const px = window.innerWidth < 500 ? 32 : 44;
   hand.forEach((card, i) => {
     const d = el('div', 'hand-card');
+    d.dataset.id = card.id;
+    d.style.setProperty('--box', `${px * 2 + 4}px`);
     if (card.id === app.selectedId) d.classList.add('selected');
     if (!isMyTurn()) d.classList.add('disabled');
-    d.append(cardCanvas(card, seat, window.innerWidth < 500 ? 38 : 50));
+    d.title = card.id === app.selectedId ? 'Click again to rotate' : 'Select';
+    const turn = el('div', 'card-turn');
+    turn.append(cardCanvas(card, seat, px));
+    d.append(turn);
     d.append(el('span', 'key', String(i + 1)));
-    d.onclick = () => selectCard(card.id);
+    const rb = el('button', 'card-rot', '⟳');
+    rb.title = 'Rotate this card';
+    rb.onclick = (e) => {
+      e.stopPropagation();
+      if (card.id !== app.selectedId) selectCard(card.id);
+      rotate(1);
+    };
+    d.append(rb);
+    // Clicking the selected card again rotates it.
+    d.onclick = () => (card.id === app.selectedId ? rotate(1) : selectCard(card.id));
     handEl.append(d);
   });
+  updateHandTransforms(true);
   $('hand-actions').classList.toggle('hidden', !hand.length || view.over);
   if (view.over) $('hint').textContent = '';
   else if (!hand.length) $('hint').textContent = 'Out of cards. Watch the others finish.';
 }
 
+const rotOf = (id) => ((((app.turns.get(id) || 0) % 4) + 4) % 4);
+
 function selectCard(id) {
   if (id !== app.selectedId) audio.select();
   app.selectedId = id;
+  app.rot = rotOf(id);
   renderHand();
   updateGhost();
 }
 
 function rotate(d = 1) {
-  app.rot = (app.rot + d + 4) % 4;
+  if (app.selectedId == null) return;
+  app.turns.set(app.selectedId, (app.turns.get(app.selectedId) || 0) + d);
+  app.rot = rotOf(app.selectedId);
   audio.rotate();
+  updateHandTransforms();
   updateGhost();
+}
+
+// Show each hand card the way it will land, as seen from the current camera angle.
+function updateHandTransforms(instant = false) {
+  for (const d of $('hand').children) {
+    const turn = d.querySelector('.card-turn');
+    const t = (app.turns.get(Number(d.dataset.id)) || 0) + app.viewTurns;
+    if (instant) turn.style.transition = 'none';
+    turn.style.transform = `rotate(${t * 90}deg)`;
+    if (instant) {
+      void turn.offsetWidth; // apply without animating, then restore the transition
+      turn.style.transition = '';
+    }
+  }
 }
 
 function selectedCard() {

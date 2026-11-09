@@ -88,7 +88,7 @@ export class AudioEngine {
     this._applyVolumes(true);
 
     // Music scheduler with lookahead.
-    this.step = 0;
+    this.musicStep = 0;
     this.nextTime = ctx.currentTime + 0.2;
     this.timer = setInterval(() => this._schedule(), 100);
     document.addEventListener('visibilitychange', () => {
@@ -163,9 +163,9 @@ export class AudioEngine {
     // If we fell far behind (tab was throttled), skip ahead instead of bursting.
     if (this.nextTime < ctx.currentTime - 0.5) this.nextTime = ctx.currentTime + 0.05;
     while (this.nextTime < ctx.currentTime + 0.35) {
-      if (this.musicOn) this._musicStep(this.step, this.nextTime);
+      if (this.musicOn) this._musicStep(this.musicStep, this.nextTime);
       this.nextTime += EIGHTH;
-      this.step++;
+      this.musicStep++;
     }
   }
 
