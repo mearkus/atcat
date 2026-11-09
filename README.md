@@ -35,9 +35,24 @@ Ties go to whoever has more visible squares.
 | --- | --- | --- |
 | Select card | Click a card or press `1`–`3` | Tap a card |
 | Place | Hover the board, click | Tap to preview, then tap **Place** (or tap the same square again) |
-| Rotate | `R` / `Shift+R`, Shift+scroll, ⟳ button | ⟳ button |
+| Rotate | Click the selected card again, its ⟳ badge, `R` / `Shift+R`, Shift+scroll | Tap the selected card again or its ⟳ badge |
 | Camera | Right-drag to orbit, scroll to zoom | Two-finger gestures |
 | Show a player's largest group | Hover their row in the scoreboard | |
+| Mute / unmute | `M` | 🔊 button |
+
+## Sound and music
+
+All audio is synthesized live with the Web Audio API, so there are no audio files.
+
+- **Music:** original generative ambient music in D major: a slow four-chord pad progression with
+  randomised plucked notes and bells. A bassline is added during games, and the arrangement relaxes on the
+  game-over screen.
+- **Effects:** card landings (pitched by stack height, with an extra crunch when you bury a rival
+  and a chime for gems), card select, rotate, invalid move, your-turn chime, tutorial steps and
+  win/lose jingles.
+- **Controls:** the 🔊 button sets music and effects volume separately. **M** mutes everything.
+  Settings are saved in the browser. Audio starts after your first click (browser autoplay rules)
+  and pauses when the tab is hidden.
 
 ## Running it
 
@@ -69,6 +84,7 @@ server/index.js    static file server + WebSocket rooms (authoritative)
 src/scene.js       three.js board, cards, placement preview, animations
 src/art.js         card face artwork (canvas), player colours and symbols
 src/controllers.js LocalController (solo) and NetController (online) behind one interface
+src/audio.js       synthesized sound effects and generative music (Web Audio API)
 src/tutorial.js    TutorialController: scripted step-by-step lessons against "Tutor"
 src/main.js        menus, lobby, HUD and input
 test/              node:test suite for the engine and AI

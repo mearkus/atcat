@@ -337,22 +337,70 @@ button.link.inline {
 
 #hand {
   display: flex;
-  gap: 10px;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+
+#hand:empty {
+  display: none;
 }
 
 .hand-card {
   position: relative;
   padding: 5px;
   border-radius: 10px;
-  background: var(--panel);
+  background: transparent;
   border: 2px solid transparent;
   cursor: pointer;
   transition: transform 0.12s, border-color 0.12s;
 }
 
+.hand-card {
+  width: calc(var(--box) + 14px);
+  height: calc(var(--box) + 14px);
+  display: grid;
+  place-items: center;
+}
+
+.card-turn {
+  transition: transform 0.22s cubic-bezier(0.3, 1.4, 0.6, 1);
+}
+
 .hand-card canvas {
   display: block;
   border-radius: 7px;
+}
+
+.card-rot {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 13px;
+  line-height: 1;
+  background: #333a4d;
+  color: var(--text);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.hand-card:hover .card-rot,
+.hand-card.selected .card-rot {
+  opacity: 1;
+}
+
+@media (pointer: coarse) {
+  .card-rot {
+    opacity: 1;
+    width: 28px;
+    height: 28px;
+  }
 }
 
 .hand-card:hover {
@@ -491,6 +539,59 @@ button.link.inline {
 
 #go-table tr.winner td {
   color: #f2c14e;
+}
+
+/* ---------- Sound settings ---------- */
+#btn-audio {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  z-index: 6;
+  background: var(--panel);
+}
+
+/* In game, sit left of the camera/help/leave buttons. */
+body.in-game #btn-audio {
+  right: 150px;
+}
+
+#audio-panel {
+  position: fixed;
+  top: 58px;
+  right: 12px;
+  width: 220px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 15;
+}
+
+body.in-game #audio-panel {
+  right: 110px;
+}
+
+#audio-panel input[type='range'] {
+  padding: 0;
+  accent-color: var(--accent);
+  background: none;
+  border: none;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
 }
 
 /* ---------- Tutorial ---------- */

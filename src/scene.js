@@ -279,7 +279,7 @@ export class BoardScene {
       if (animate && lm && lm.card.id === id) {
         const targetY = g.position.y;
         g.position.y += 2.5;
-        this.anims.push({ obj: g, from: g.position.y, to: targetY, t: 0, dur: 0.38, onDone: () => this.onLand?.() });
+        this.anims.push({ obj: g, from: g.position.y, to: targetY, t: 0, dur: 0.38, onDone: () => this.onLand?.(id) });
       }
     }
     this._markLast(lm);
@@ -409,6 +409,11 @@ export class BoardScene {
     this.camera.updateProjectionMatrix();
   }
 
+  /** Camera azimuth in quarter turns (0 = default view from the front). */
+  viewQuarter() {
+    return Math.round(this.controls.getAzimuthalAngle() / (Math.PI / 2));
+  }
+
   _frame() {
     const dt = Math.min(this.clock.getDelta(), 0.05);
     const t = this.clock.elapsedTime;
@@ -427,6 +432,11 @@ export class BoardScene {
     const hl = this.highlightGroup.children[0];
     if (hl) hl.material.opacity = 0.3 + 0.2 * Math.sin(t * 4);
     this.controls.update();
+    const q = this.viewQuarter();
+    if (q !== this._viewQ) {
+      this._viewQ = q;
+      this.onViewTurn?.(q);
+    }
     this.renderer.render(this.scene, this.camera);
   }
 
