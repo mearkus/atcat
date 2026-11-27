@@ -346,7 +346,12 @@ function renderHUD() {
   // Scoreboard
   const sb = $('scoreboard');
   sb.innerHTML = '';
-  view.players.forEach((p, i) => {
+  // List players in turn order, so it's clear who moves when.
+  const n = view.players.length;
+  const first = view.firstSeat ?? 0;
+  const order = Array.from({ length: n }, (_, k) => (first + k) % n);
+  order.forEach((i) => {
+    const p = view.players[i];
     const row = el('div', 'sb-row');
     if (view.turn === i) row.classList.add('active');
     if (seats && seats[i] && !seats[i].connected) row.classList.add('offline');
@@ -356,7 +361,13 @@ function renderHUD() {
     row.append(el('span', 'sb-name', name));
     row.append(el('span', 'sb-score', String(scores[i].score)));
     row.append(
-      el('span', 'sb-meta', `group ${scores[i].largest} · gems ${scores[i].gems} · cards ${p.handCount + p.deckCount}`),
+      el(
+        'span',
+        'sb-meta',
+        `group ${scores[i].largest} · gems ${scores[i].gems}` +
+          (scores[i].headStart ? ` · head start +${scores[i].headStart}` : '') +
+          ` · cards ${p.handCount + p.deckCount}`,
+      ),
     );
     row.onmouseenter = () => app.scene.highlightCells(scores[i].group, PLAYER_COLORS[i]);
     row.onmouseleave = () => app.scene.highlightCells(app.coachCells, '#ffffff');
@@ -565,10 +576,17 @@ function showGameOver() {
   const tie = ranks.length > 1 && ranks[0].score === ranks[1].score && ranks[0].cells === ranks[1].cells;
   $('go-title').textContent = tie ? "It's a tie!" : won ? 'You win! 🎉' : `${view.players[ranks[0].seat].name} wins`;
   const t = $('go-table');
-  t.innerHTML = '<tr><th>#</th><th>Player</th><th>Group</th><th>Gems</th><th>Score</th></tr>';
+  const showStart = ranks.some((r) => r.headStart);
+  t.innerHTML =
+    '<tr><th>#</th><th>Player</th><th>Group</th><th>Gems</th>' +
+    (showStart ? '<th title="Head-start points for moving earlier">Start</th>' : '') +
+    '<th>Score</th></tr>';
   ranks.forEach((r, i) => {
     const tr = el('tr', i === 0 ? 'winner' : '');
-    tr.innerHTML = `<td>${i + 1}</td><td></td><td>${r.largest}</td><td>${r.gems} ×2</td><td class="total">${r.score}</td>`;
+    tr.innerHTML =
+      `<td>${i + 1}</td><td></td><td>${r.largest}</td><td>${r.gems} ×2</td>` +
+      (showStart ? `<td>+${r.headStart}</td>` : '') +
+      `<td class="total">${r.score}</td>`;
     const nameCell = tr.children[1];
     nameCell.append(symbolSwatch(r.seat, 14), ' ', view.players[r.seat].name + (r.seat === seat ? ' (you)' : ''));
     t.append(tr);

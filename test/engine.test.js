@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createGame, applyMove, checkPlacement, computeScores, legalPlacements, legalSpots, rankings, viewFor, MAX_HEIGHT,
+  HEAD_START,
 } from '../shared/engine.js';
 import { chooseMove } from '../shared/ai.js';
 
@@ -53,7 +54,7 @@ test('scoring counts largest group and gems on top only', () => {
   const sc = computeScores(g);
   assert.equal(sc[0].largest, 1);
   assert.equal(sc[0].gems, 1);
-  assert.equal(sc[0].score, 3);
+  assert.equal(sc[0].score, 3 + g.headStart[0]);
   assert.equal(sc[1].largest, 1);
   assert.equal(sc[1].cells, 2);
 });
@@ -116,4 +117,60 @@ test('legalSpots marks every square the card can be aimed at for a rotation', ()
     assert.ok(spots.length > 0);
     for (const { x, y } of spots) assert.equal(checkPlacement(g, x, y, rot), null);
   }
+});
+
+test('difficulty ladder: easy beats random play, normal beats easy', () => {
+  const play = (a, b, N) => {
+    let aWins = 0;
+    for (let i = 0; i < N; i++) {
+      const g = createGame({ players: [{ name: 'X' }, { name: 'Y' }], seed: 3000 + i });
+      const lineup = i % 2 ? [a, b] : [b, a];
+      let r = 7 + i;
+      const rand = () => ((r = (r * 16807) % 2147483647) / 2147483647);
+      while (!g.over) {
+        const seat = g.turn;
+        const who = lineup[seat];
+        let mv;
+        if (who === 'random') {
+          const pls = legalPlacements(g);
+          mv = { cardId: g.players[seat].hand[0].id, ...pls[Math.floor(rand() * pls.length)] };
+        } else mv = chooseMove(g, seat, who, rand);
+        applyMove(g, seat, mv);
+      }
+      if (rankings(g)[0].seat === lineup.indexOf(a)) aWins++;
+    }
+    return aWins;
+  };
+  const N = 24;
+  const easyVsRandom = play('easy', 'random', N);
+  assert.ok(easyVsRandom >= N * 0.65, `easy beat random ${easyVsRandom}/${N}`);
+  const normalVsEasy = play('normal', 'easy', N);
+  assert.ok(normalVsEasy >= N * 0.55, `normal beat easy ${normalVsEasy}/${N}`);
+  assert.ok(normalVsEasy < N, 'normal should not win every game against easy');
+});
+
+test('earlier turn positions get head-start points, shown in scores and views', () => {
+  for (const n of [2, 3, 4]) {
+    for (let seed = 1; seed <= 8; seed++) {
+      const g = createGame({ players: Array.from({ length: n }, (_, i) => ({ name: `P${i}` })), seed });
+      assert.equal(g.firstSeat, g.turn);
+      for (let k = 0; k < n; k++) assert.equal(g.headStart[(g.firstSeat + k) % n], HEAD_START[n][k]);
+      assert.equal(g.headStart[(g.firstSeat + n - 1) % n], 0, 'last to move gets no head start');
+      const sc = computeScores(g);
+      for (let s = 0; s < n; s++) {
+        assert.equal(sc[s].headStart, g.headStart[s]);
+        assert.equal(sc[s].score, g.headStart[s]); // empty board
+      }
+      const v = viewFor(g, 0);
+      assert.deepEqual(v.headStart, g.headStart);
+      assert.equal(v.firstSeat, g.firstSeat);
+      assert.deepEqual(computeScores(v).map((r) => r.score), sc.map((r) => r.score));
+    }
+  }
+});
+
+test('games saved without head-start data still score', () => {
+  const g = two();
+  delete g.headStart;
+  assert.ok(computeScores(g).every((r) => r.score === 0 && r.headStart === 0));
 });

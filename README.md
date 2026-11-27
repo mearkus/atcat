@@ -26,6 +26,9 @@ When nobody can play, only the **top** of each stack counts:
 
 - **1 point** per square in your largest orthogonally connected group
 - **2 points** per visible gem of yours
+- a **head start** for moving early: going later is an edge (you get to bury cards nobody can answer), so
+  earlier players start with bonus points. First to last: 3/0 with 2 players, 4/2/0 with 3, 3/2/1/0 with 4.
+  The scoreboard lists players in turn order.
 
 Ties go to whoever has more visible squares.
 
@@ -70,7 +73,8 @@ npm run build    # bundles the client into dist/
 npm start        # serves dist/ and the multiplayer WebSocket on PORT (default 3000)
 ```
 
-Run the tests with `npm test`.
+Run the tests with `npm test`. `npm run sim` plays a few thousand bot games and prints the difficulty ladder
+and win rate by turn position, for checking balance after rule or AI changes.
 
 Solo games run entirely in the browser. Online play needs the Node server, so deploy to any host
 that supports long-lived WebSocket connections (Fly.io, Render, Railway, a VPS, etc.).
@@ -79,7 +83,7 @@ that supports long-lived WebSocket connections (Fly.io, Render, Railway, a VPS, 
 
 ```
 shared/engine.js   rules engine (pure JS, used by client and server)
-shared/ai.js       AI opponents: easy / normal / hard
+shared/ai.js       AI opponents: easy / normal / hard (tuning knobs in LEVELS)
 server/index.js    static file server + WebSocket rooms (authoritative)
 src/scene.js       three.js board, cards, placement preview, animations
 src/art.js         card face artwork (canvas), player colours and symbols
@@ -88,6 +92,7 @@ src/audio.js       synthesized sound effects and generative music (Web Audio API
 src/tutorial.js    TutorialController: scripted step-by-step lessons against "Tutor"
 src/main.js        menus, lobby, HUD and input
 test/              node:test suite for the engine and AI
+scripts/simulate.js balance simulator (npm run sim)
 ```
 
 ### Multiplayer notes
