@@ -181,6 +181,12 @@ button.link.inline {
   text-align: center;
 }
 
+.warn {
+  color: #ffd27a;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
 .muted {
   color: var(--muted);
   font-size: 13px;
