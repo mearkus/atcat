@@ -16,6 +16,8 @@
 // * When no one can play, the game ends. Only the top of each stack counts:
 //   score = size of your largest connected group + 2 per visible gem of yours.
 //   Ties are broken by total visible squares.
+// * Moving later is an edge (you get to bury cards nobody can answer), so
+//   players earlier in the turn order start with a few head-start points.
 
 export const MAX_HEIGHT = 3;
 export const HAND_SIZE = 3;
@@ -29,6 +31,14 @@ export const DIRS = [
   [0, -1],
 ];
 export const BOARD_SIZES = { 2: 7, 3: 8, 4: 9 };
+
+// Head-start points by turn position (first player first), per player count.
+// Tuned with simulated games so each position wins about equally often.
+export const HEAD_START = {
+  2: [3, 0],
+  3: [4, 2, 0],
+  4: [3, 2, 1, 0],
+};
 
 // [first half, second half, count]
 const DECK_RECIPE = [
@@ -88,9 +98,17 @@ export function createGame({ players, seed = (Date.now() ^ (Math.random() * 1e9)
       deck,
     };
   });
-  // Random starting player.
+  // Random starting player. Earlier turn positions get head-start points.
   state.turn = Math.floor(nextRandom(state) * n);
+  state.firstSeat = state.turn;
+  state.headStart = headStartFor(n, state.firstSeat);
   return state;
+}
+
+/** Head-start points per seat for a game where `firstSeat` moves first. */
+export function headStartFor(n, firstSeat) {
+  const table = HEAD_START[n] || [];
+  return Array.from({ length: n }, (_, seat) => table[(seat - firstSeat + n) % n] || 0);
 }
 
 export const idx = (state, x, y) => y * state.size + x;
@@ -228,7 +246,14 @@ export function computeScores(state) {
   const { size, board } = state;
   const n = state.players.length;
   const top = board.map((s) => (s.length ? s[s.length - 1] : null));
-  const res = Array.from({ length: n }, () => ({ largest: 0, gems: 0, cells: 0, score: 0, group: [] }));
+  const res = Array.from({ length: n }, (_, i) => ({
+    largest: 0,
+    gems: 0,
+    cells: 0,
+    headStart: state.headStart?.[i] || 0,
+    score: 0,
+    group: [],
+  }));
   const seen = new Uint8Array(size * size);
   for (let i = 0; i < top.length; i++) {
     const t = top[i];
@@ -264,7 +289,7 @@ export function computeScores(state) {
       r.group = group;
     }
   }
-  for (const r of res) r.score = r.largest + GEM_POINTS * r.gems;
+  for (const r of res) r.score = r.largest + GEM_POINTS * r.gems + r.headStart;
   return res;
 }
 
@@ -286,6 +311,8 @@ export function viewFor(state, seat) {
     moveNumber: state.moveNumber,
     over: state.over,
     lastMove: state.lastMove,
+    firstSeat: state.firstSeat,
+    headStart: state.headStart,
     players: state.players.map((p, i) => ({
       name: p.name,
       isAI: p.isAI,

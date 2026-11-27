@@ -26,6 +26,9 @@ When nobody can play, only the **top** of each stack counts:
 
 - **1 point** per square in your largest orthogonally connected group
 - **2 points** per visible gem of yours
+- a **head start** for moving early: going later is an edge (you get to bury cards nobody can answer), so
+  earlier players start with bonus points. First to last: 3/0 with 2 players, 4/2/0 with 3, 3/2/1/0 with 4.
+  The scoreboard lists players in turn order.
 
 Ties go to whoever has more visible squares.
 
