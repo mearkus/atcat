@@ -168,6 +168,20 @@ export function legalPlacements(state) {
   return out;
 }
 
+/**
+ * Squares where a card fits at rotation `rot`, keyed by the square its first
+ * half lands on (the square the player points at). Used for legal-spot dots.
+ */
+export function legalSpots(state, rot) {
+  const out = [];
+  for (let y = 0; y < state.size; y++) {
+    for (let x = 0; x < state.size; x++) {
+      if (checkPlacement(state, x, y, rot & 3) === null) out.push({ x, y });
+    }
+  }
+  return out;
+}
+
 export function hasAnyPlacement(state) {
   for (let y = 0; y < state.size; y++) {
     for (let x = 0; x < state.size; x++) {

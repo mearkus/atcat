@@ -2,7 +2,7 @@ import './style.css';
 import { BoardScene } from './scene.js';
 import { LocalController, NetController, ONLINE_AVAILABLE } from './controllers.js';
 import { TutorialController } from './tutorial.js';
-import { checkPlacement, computeScores, rankings } from '../shared/engine.js';
+import { checkPlacement, computeScores, legalSpots, rankings } from '../shared/engine.js';
 import { PLAYER_COLORS, cardCanvas, symbolSwatch } from './art.js';
 import { audio, unlockOnGesture } from './audio.js';
 
@@ -101,6 +101,7 @@ function leaveToMenu() {
   app.controller = null;
   app.info = null;
   app.scene?.clearGhost();
+  app.scene?.clearLegalSpots();
   app.scene?.highlightCells(null);
   renderCoach(null);
   history.replaceState(null, '', location.pathname);
@@ -287,6 +288,7 @@ function onUpdate(info) {
   for (const id of app.turns.keys()) if (!hand.some((c) => c.id === id)) app.turns.delete(id);
   app.rot = rotOf(app.selectedId);
   app.touchPreview = null;
+  app.spotsKey = '';
   renderHUD();
   renderCoach(info.tutorial);
   updateGhost();
@@ -450,6 +452,25 @@ function selectedCard() {
   return hand.find((c) => c.id === app.selectedId) || null;
 }
 
+// Dots on every square where the selected card fits at its current rotation.
+// Returns the spots, or null when none are shown.
+function updateSpots(reading) {
+  const view = app.info.view;
+  if (reading || view.over || !isMyTurn() || !selectedCard()) {
+    app.spotsKey = '';
+    app.spots = null;
+    app.scene.clearLegalSpots();
+    return null;
+  }
+  const key = `${view.gameId}:${view.moveNumber}:${app.rot}`;
+  if (key !== app.spotsKey) {
+    app.spotsKey = key;
+    app.spots = legalSpots(view, app.rot);
+  }
+  app.scene.setLegalSpots(app.spots, key);
+  return app.spots;
+}
+
 function updateGhost() {
   if (!app.scene || !app.info?.started) return;
   const view = app.info.view;
@@ -457,7 +478,9 @@ function updateGhost() {
   const cell = app.touchPreview || app.hover;
   const hint = $('hint');
   $('btn-confirm').classList.add('hidden');
-  if (app.info.tutorial && (app.info.tutorial.canNext || app.info.tutorial.finish || app.info.tutorial.waiting)) {
+  const reading = app.info.tutorial && (app.info.tutorial.canNext || app.info.tutorial.finish || app.info.tutorial.waiting);
+  const spots = updateSpots(reading);
+  if (reading) {
     // Reading step: no placing, so no preview or placement hints.
     app.scene.clearGhost();
     hint.textContent = '';
@@ -466,13 +489,17 @@ function updateGhost() {
   if (!card || !cell || view.over) {
     app.scene.clearGhost();
     if (!view.over && card) {
-      hint.textContent = isMyTurn()
-        ? view.moveNumber === 0
-          ? 'Place the first card over the centre square'
-          : TOUCH
-            ? 'Pick a card, then tap a square to preview it'
-            : 'Pick a card, aim at the board, click to place'
-        : '';
+      hint.textContent = !isMyTurn()
+        ? ''
+        : spots && !spots.length
+          ? TOUCH
+            ? 'No spot fits this way round. Tap the card to rotate it.'
+            : 'No spot fits this way round. Press R to rotate the card.'
+          : view.moveNumber === 0
+            ? 'Place the first card over the centre square'
+            : TOUCH
+              ? 'Tap a green dot to preview the card there'
+              : 'Click a green dot to place the card';
     }
     return;
   }

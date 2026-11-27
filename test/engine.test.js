@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createGame, applyMove, checkPlacement, computeScores, legalPlacements, rankings, viewFor, MAX_HEIGHT,
+  createGame, applyMove, checkPlacement, computeScores, legalPlacements, legalSpots, rankings, viewFor, MAX_HEIGHT,
 } from '../shared/engine.js';
 import { chooseMove } from '../shared/ai.js';
 
@@ -100,4 +100,20 @@ test('stronger AI beats easy AI more often', () => {
     if (rankings(g)[0].seat === 0) hardWins++;
   }
   assert.ok(hardWins >= N * 0.6, `stronger AI won ${hardWins}/${N}`);
+});
+
+test('legalSpots marks every square the card can be aimed at for a rotation', () => {
+  const g = two();
+  // First move: only footprints covering the centre (3,3).
+  assert.deepEqual(legalSpots(g, 0), [{ x: 2, y: 3 }, { x: 3, y: 3 }]);
+  assert.deepEqual(legalSpots(g, 1), [{ x: 3, y: 2 }, { x: 3, y: 3 }]);
+  const s = g.turn;
+  applyMove(g, s, { cardId: g.players[s].hand[0].id, x: 3, y: 3, rot: 0 });
+  for (let rot = 0; rot < 4; rot++) {
+    const spots = legalSpots(g, rot);
+    const expected = legalPlacements(g).filter((p) => p.rot === rot).map(({ x, y }) => ({ x, y }));
+    assert.deepEqual(spots, expected);
+    assert.ok(spots.length > 0);
+    for (const { x, y } of spots) assert.equal(checkPlacement(g, x, y, rot), null);
+  }
 });
