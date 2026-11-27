@@ -112,14 +112,17 @@ const STEPS = [
   },
   {
     title: 'You\'re ready!',
-    text: 'That\'s everything. Start a real game against an AI, or invite friends online from the menu.',
+    // Only mention online play when this build has a game server.
+    text: (t) =>
+      'That\'s everything. Start a real game against an AI' + (t.online ? ', or invite friends online from the menu.' : '.'),
     finish: true,
   },
 ];
 
 export class TutorialController {
-  constructor({ name, botDelay = BOT_DELAY_MS } = {}) {
+  constructor({ name, botDelay = BOT_DELAY_MS, online = false } = {}) {
     this.mode = 'tutorial';
+    this.online = online;
     this.botDelay = botDelay;
     this.name = name || 'You';
     this.onUpdate = () => {};
@@ -193,7 +196,7 @@ export class TutorialController {
         step: this.step + 1,
         total: STEPS.length,
         title: st.title,
-        text: st.text,
+        text: typeof st.text === 'function' ? st.text(this) : st.text,
         canNext: !!st.next && !this.busy,
         finish: !!st.finish,
         ui: this.busy ? null : st.ui || null,

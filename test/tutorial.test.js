@@ -69,3 +69,15 @@ test('goal steps reject moves that miss the goal', () => {
   assert.match(errors.pop(), /centre/);
   t.destroy();
 });
+
+test('the last tutorial step only mentions online play when it exists', async () => {
+  for (const online of [false, true]) {
+    const t = new TutorialController({ name: 'T', botDelay: 0, online });
+    let info = null;
+    t.onUpdate = (i) => (info = i);
+    t.start();
+    t._goto(TUTORIAL_STEPS - 1);
+    assert.equal(info.tutorial.finish, true);
+    assert.equal(/online/.test(info.tutorial.text), online);
+  }
+});

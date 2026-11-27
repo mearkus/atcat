@@ -76,9 +76,12 @@ function ensureScene() {
   return app.scene;
 }
 
+// Only a name the player actually typed is saved. An empty field stays empty,
+// and each mode fills in its own default ("You" in solo, "Player" online).
 function playerName() {
-  const n = $('name').value.trim() || 'Player';
-  localStorage.setItem('stratum:name', n);
+  const n = $('name').value.trim();
+  if (n) localStorage.setItem('stratum:name', n);
+  else localStorage.removeItem('stratum:name');
   return n;
 }
 
@@ -109,6 +112,8 @@ function leaveToMenu() {
 }
 
 // ---------- menu actions ----------
+// Older builds saved the placeholder "Player" as a real name; drop it.
+if (localStorage.getItem('stratum:name') === 'Player') localStorage.removeItem('stratum:name');
 $('name').value = localStorage.getItem('stratum:name') || '';
 
 function startSolo(opponents, difficulty) {
@@ -120,7 +125,7 @@ function startSolo(opponents, difficulty) {
 $('btn-solo').onclick = () => startSolo(Number($('solo-opponents').value), $('solo-difficulty').value);
 
 function startTutorial() {
-  const c = new TutorialController({ name: playerName() });
+  const c = new TutorialController({ name: playerName(), online: ONLINE_AVAILABLE });
   useController(c);
   c.start();
 }
