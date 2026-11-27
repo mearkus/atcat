@@ -42,6 +42,7 @@ Ties go to whoever has more visible squares.
 | Camera | Left- or right-drag to orbit, scroll to zoom | Two-finger gestures |
 | Show a player's largest group | Hover or click their row in the scoreboard | Tap their row (tap again to clear) |
 | Mute / unmute | `M` | 🔊 button |
+| Undo your last move (solo, Easy and Normal) | **↶ Undo**, `U` or `Ctrl+Z` | **↶ Undo** |
 
 ## Sound and music
 

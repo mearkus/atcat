@@ -455,6 +455,11 @@ button.link.inline {
   background: var(--accent);
 }
 
+#hand-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
 #hint {
   text-align: center;
   min-height: 1em;
