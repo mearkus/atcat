@@ -101,3 +101,33 @@ test('stronger AI beats easy AI more often', () => {
   }
   assert.ok(hardWins >= N * 0.6, `stronger AI won ${hardWins}/${N}`);
 });
+
+test('difficulty ladder: easy beats random play, normal beats easy', () => {
+  const play = (a, b, N) => {
+    let aWins = 0;
+    for (let i = 0; i < N; i++) {
+      const g = createGame({ players: [{ name: 'X' }, { name: 'Y' }], seed: 3000 + i });
+      const lineup = i % 2 ? [a, b] : [b, a];
+      let r = 7 + i;
+      const rand = () => ((r = (r * 16807) % 2147483647) / 2147483647);
+      while (!g.over) {
+        const seat = g.turn;
+        const who = lineup[seat];
+        let mv;
+        if (who === 'random') {
+          const pls = legalPlacements(g);
+          mv = { cardId: g.players[seat].hand[0].id, ...pls[Math.floor(rand() * pls.length)] };
+        } else mv = chooseMove(g, seat, who, rand);
+        applyMove(g, seat, mv);
+      }
+      if (rankings(g)[0].seat === lineup.indexOf(a)) aWins++;
+    }
+    return aWins;
+  };
+  const N = 24;
+  const easyVsRandom = play('easy', 'random', N);
+  assert.ok(easyVsRandom >= N * 0.65, `easy beat random ${easyVsRandom}/${N}`);
+  const normalVsEasy = play('normal', 'easy', N);
+  assert.ok(normalVsEasy >= N * 0.55, `normal beat easy ${normalVsEasy}/${N}`);
+  assert.ok(normalVsEasy < N, 'normal should not win every game against easy');
+});
