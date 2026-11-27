@@ -48,9 +48,32 @@ function toast(msg, kind = 'error') {
   toastTimer = setTimeout(() => t.classList.add('hidden'), 2600);
 }
 
+// Returns the 3D scene, or null when this browser can't start WebGL.
 function ensureScene() {
   if (app.scene) return app.scene;
-  app.scene = new BoardScene($('stage'), {
+  if (app.no3d) return null;
+  try {
+    app.scene = createScene();
+  } catch (err) {
+    console.error('Stratum: 3D board failed to start', err);
+    app.no3d = true;
+    $('no3d-note').classList.remove('hidden');
+    return null;
+  }
+  return app.scene;
+}
+
+// Every way into a game calls this first, so a browser without 3D gets a plain
+// message instead of a blank screen.
+function need3D() {
+  if (ensureScene()) return true;
+  $('no3d').classList.remove('hidden');
+  return false;
+}
+$('btn-no3d-close').onclick = () => $('no3d').classList.add('hidden');
+
+function createScene() {
+  const scene = new BoardScene($('stage'), {
     onHover: (c) => {
       app.hover = c;
       updateGhost();
@@ -58,7 +81,7 @@ function ensureScene() {
     onClick: (c, pointerType) => onBoardClick(c, pointerType),
     onRotate: (d) => rotate(d),
   });
-  app.scene.onViewTurn = (q) => {
+  scene.onViewTurn = (q) => {
     // Accumulate the shortest step so hand cards never spin the long way round.
     let d = (((q - (app.lastViewQ ?? q)) % 4) + 4) % 4;
     if (d === 3) d = -1;
@@ -66,19 +89,22 @@ function ensureScene() {
     app.viewTurns += d;
     updateHandTransforms();
   };
-  app.scene.onLand = (cardId) => {
+  scene.onLand = (cardId) => {
     const sfx = app.pendingLand?.get(cardId);
     if (sfx) {
       app.pendingLand.delete(cardId);
       audio.place(sfx);
     }
   };
-  return app.scene;
+  return scene;
 }
 
+// Only a name the player actually typed is saved. An empty field stays empty,
+// and each mode fills in its own default ("You" in solo, "Player" online).
 function playerName() {
-  const n = $('name').value.trim() || 'Player';
-  localStorage.setItem('stratum:name', n);
+  const n = $('name').value.trim();
+  if (n) localStorage.setItem('stratum:name', n);
+  else localStorage.removeItem('stratum:name');
   return n;
 }
 
@@ -109,9 +135,12 @@ function leaveToMenu() {
 }
 
 // ---------- menu actions ----------
+// Older builds saved the placeholder "Player" as a real name; drop it.
+if (localStorage.getItem('stratum:name') === 'Player') localStorage.removeItem('stratum:name');
 $('name').value = localStorage.getItem('stratum:name') || '';
 
 function startSolo(opponents, difficulty) {
+  if (!need3D()) return;
   const c = new LocalController({ name: playerName(), opponents, difficulty });
   useController(c);
   c.start();
@@ -120,7 +149,8 @@ function startSolo(opponents, difficulty) {
 $('btn-solo').onclick = () => startSolo(Number($('solo-opponents').value), $('solo-difficulty').value);
 
 function startTutorial() {
-  const c = new TutorialController({ name: playerName() });
+  if (!need3D()) return;
+  const c = new TutorialController({ name: playerName(), online: ONLINE_AVAILABLE });
   useController(c);
   c.start();
 }
@@ -142,6 +172,7 @@ $('coach-menu').onclick = () => {
 };
 
 $('btn-create').onclick = () => {
+  if (!need3D()) return;
   const c = new NetController();
   useController(c);
   c.create(playerName());
@@ -149,6 +180,7 @@ $('btn-create').onclick = () => {
 
 function joinCode(code) {
   if (!/^[A-Za-z]{4}$/.test(code.trim())) return toast('Enter a 4-letter room code');
+  if (!need3D()) return;
   const c = new NetController();
   useController(c);
   c.join(code, playerName());
@@ -278,10 +310,16 @@ function onUpdate(info) {
   app.info = info;
   if (info.mode === 'online' && info.code) history.replaceState(null, '', `?room=${info.code}`);
   if (!info.started) return renderLobby(info);
-  showScreen('game');
   const view = info.view;
+  if (!ensureScene()) {
+    // No 3D: back out of the game instead of showing an empty board.
+    leaveToMenu();
+    $('no3d').classList.remove('hidden');
+    return;
+  }
+  showScreen('game');
   queueMoveSound(view, info.seat);
-  ensureScene().setState(view);
+  app.scene.setState(view);
   audio.setMood(view.over ? 'end' : 'game');
   const hand = view.players[info.seat]?.hand || [];
   if (!hand.some((c) => c.id === app.selectedId)) app.selectedId = hand[0]?.id ?? null;
@@ -607,5 +645,6 @@ if (roomParam) {
   $('join-code').value = roomParam.toUpperCase();
   if (localStorage.getItem('stratum:name')) joinCode(roomParam);
 }
-// Show an empty board behind the menu as a backdrop.
-ensureScene().buildBoard(7);
+// Show an empty board behind the menu as a backdrop (and find out early
+// whether this browser can draw 3D at all).
+ensureScene()?.buildBoard(7);

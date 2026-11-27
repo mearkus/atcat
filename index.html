@@ -52,7 +52,8 @@
         </div>
       </div>
 
-      <p id="online-off" class="muted hidden">Online multiplayer needs the Stratum server, which this static site doesn't include.</p>
+      <p id="no3d-note" class="warn hidden">This browser can't start the 3D board, so the game can't run here.</p>
+      <p id="online-off" class="muted hidden">Online play isn't available on this site yet, so play solo against the AI for now.</p>
       <button id="btn-rules" class="link">How to play</button>
     </section>
 
@@ -142,6 +143,16 @@
       </div>
     </div>
 
+    <!-- 3D couldn't start -->
+    <div id="no3d" class="modal hidden" role="alertdialog" aria-labelledby="no3d-title">
+      <div class="panel">
+        <h2 id="no3d-title">The 3D board can't start</h2>
+        <p>Stratum draws its board with 3D graphics (WebGL), and this browser or device couldn't turn them on.</p>
+        <p class="muted">Try another browser, update this one, or turn on hardware acceleration in its settings, then reload the page.</p>
+        <button id="btn-no3d-close" class="primary">OK</button>
+      </div>
+    </div>
+
     <!-- Rules -->
     <div id="rules" class="modal hidden">
       <div class="panel rules">
@@ -155,7 +166,7 @@
         </ol>
         <p>Only the <b>top</b> of each stack counts. When nobody can play, you score:</p>
         <ul>
-          <li><b>1 point</b> per square in your largest connected group (orthogonal)</li>
+          <li><b>1 point</b> per square in your largest connected group (squares that share a side; corners don't count)</li>
           <li><b>2 points</b> per gem of yours still visible anywhere</li>
           <li>A <b>head start</b> for moving early: going later is an advantage, so earlier players start with a few points (shown on the scoreboard, which lists players in turn order)</li>
         </ul>
