@@ -135,6 +135,9 @@ export class TutorialController {
       p.deck = [];
     }
     this.game.turn = ME;
+    // No head-start points in the tutorial, so the scoring lesson adds up.
+    this.game.firstSeat = ME;
+    this.game.headStart = [0, 0];
     this.step = -1;
     this.busy = false;
     this._goto(0);

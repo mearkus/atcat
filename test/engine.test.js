@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  createGame, applyMove, checkPlacement, computeScores, legalPlacements, rankings, viewFor, MAX_HEIGHT,
+  createGame, applyMove, checkPlacement, computeScores, legalPlacements, rankings, viewFor, MAX_HEIGHT, HEAD_START,
 } from '../shared/engine.js';
 import { chooseMove } from '../shared/ai.js';
 
@@ -53,7 +53,7 @@ test('scoring counts largest group and gems on top only', () => {
   const sc = computeScores(g);
   assert.equal(sc[0].largest, 1);
   assert.equal(sc[0].gems, 1);
-  assert.equal(sc[0].score, 3);
+  assert.equal(sc[0].score, 3 + g.headStart[0]);
   assert.equal(sc[1].largest, 1);
   assert.equal(sc[1].cells, 2);
 });
@@ -130,4 +130,30 @@ test('difficulty ladder: easy beats random play, normal beats easy', () => {
   const normalVsEasy = play('normal', 'easy', N);
   assert.ok(normalVsEasy >= N * 0.55, `normal beat easy ${normalVsEasy}/${N}`);
   assert.ok(normalVsEasy < N, 'normal should not win every game against easy');
+});
+
+test('earlier turn positions get head-start points, shown in scores and views', () => {
+  for (const n of [2, 3, 4]) {
+    for (let seed = 1; seed <= 8; seed++) {
+      const g = createGame({ players: Array.from({ length: n }, (_, i) => ({ name: `P${i}` })), seed });
+      assert.equal(g.firstSeat, g.turn);
+      for (let k = 0; k < n; k++) assert.equal(g.headStart[(g.firstSeat + k) % n], HEAD_START[n][k]);
+      assert.equal(g.headStart[(g.firstSeat + n - 1) % n], 0, 'last to move gets no head start');
+      const sc = computeScores(g);
+      for (let s = 0; s < n; s++) {
+        assert.equal(sc[s].headStart, g.headStart[s]);
+        assert.equal(sc[s].score, g.headStart[s]); // empty board
+      }
+      const v = viewFor(g, 0);
+      assert.deepEqual(v.headStart, g.headStart);
+      assert.equal(v.firstSeat, g.firstSeat);
+      assert.deepEqual(computeScores(v).map((r) => r.score), sc.map((r) => r.score));
+    }
+  }
+});
+
+test('games saved without head-start data still score', () => {
+  const g = two();
+  delete g.headStart;
+  assert.ok(computeScores(g).every((r) => r.score === 0 && r.headStart === 0));
 });
