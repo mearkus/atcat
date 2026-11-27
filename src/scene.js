@@ -64,6 +64,9 @@ export class BoardScene {
     scene.add(this.boardGroup);
     this.highlightGroup = new THREE.Group();
     scene.add(this.highlightGroup);
+    this.spotGroup = new THREE.Group();
+    scene.add(this.spotGroup);
+    this.spotKey = '';
 
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
@@ -105,6 +108,7 @@ export class BoardScene {
     this.boardGroup.clear();
     for (const g of this.cards.values()) this.scene.remove(g);
     this.cards.clear();
+    this.clearLegalSpots();
     const extent = size * CELL + 0.6;
     const base = new THREE.Mesh(
       new RoundedBoxGeometry(extent, BOARD_TOP, extent, 3, 0.12),
@@ -284,6 +288,7 @@ export class BoardScene {
     }
     this._markLast(lm);
     this.ghostKey = '';
+    this.spotKey = '';
   }
 
   _markLast(lm) {
@@ -344,6 +349,30 @@ export class BoardScene {
       m.position.y = this.levelY(this.heights[i] - 1) + THICK / 2 + 0.01;
       this.highlightGroup.add(m);
     }
+  }
+
+  // ---------- legal-spot dots ----------
+  /** Dots on every square the selected card can be aimed at. `key` skips redundant rebuilds. */
+  setLegalSpots(cells, key = '') {
+    if (key && key === this.spotKey) return;
+    this.spotKey = key;
+    this.spotGroup.clear();
+    if (!cells || !cells.length) return;
+    const geo = this._spotGeo || (this._spotGeo = new THREE.CircleGeometry(0.13, 24));
+    const mat =
+      this._spotMat ||
+      (this._spotMat = new THREE.MeshBasicMaterial({ color: '#5dff9a', transparent: true, opacity: 0.7, depthWrite: false }));
+    for (const { x, y } of cells) {
+      const m = new THREE.Mesh(geo, mat);
+      m.rotation.x = -Math.PI / 2;
+      m.position.copy(this.cellToWorld(x, y));
+      m.position.y = this.levelY(this.heights[y * this.size + x] - 1) + THICK / 2 + 0.012;
+      this.spotGroup.add(m);
+    }
+  }
+
+  clearLegalSpots() {
+    this.setLegalSpots(null);
   }
 
   // ---------- input ----------
@@ -429,6 +458,7 @@ export class BoardScene {
       for (const c of g.children) if (c.userData.spin) c.rotation.y = t * 0.8;
     }
     if (this.centerRing) this.centerRing.visible = this._lastMoveNumber === 0;
+    if (this._spotMat) this._spotMat.opacity = 0.55 + 0.2 * Math.sin(t * 3);
     const hl = this.highlightGroup.children[0];
     if (hl) hl.material.opacity = 0.3 + 0.2 * Math.sin(t * 4);
     this.controls.update();
