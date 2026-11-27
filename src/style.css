@@ -264,7 +264,12 @@ button.link.inline {
   padding: 6px 8px;
   border-radius: 8px;
   border-left: 3px solid transparent;
-  cursor: default;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sb-row.pinned {
+  outline: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .sb-row.active {
@@ -739,6 +744,9 @@ body.in-game #audio-panel {
     padding: 3px 6px;
   }
   .sb-row .sb-meta {
+    font-size: 10px;
+  }
+  .sb-row .sb-detail {
     display: none;
   }
   .sb-row .sb-name {

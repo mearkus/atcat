@@ -114,6 +114,8 @@ function useController(c) {
   app.info = null;
   app.selectedId = null;
   app.shownGameOver = null;
+  app.pinSeat = app.hoverSeat = null;
+  app.scores = null;
   c.onUpdate = onUpdate;
   c.onError = (m) => toast(m);
   c.onClose = (m) => {
@@ -126,6 +128,8 @@ function leaveToMenu() {
   app.controller?.destroy();
   app.controller = null;
   app.info = null;
+  app.pinSeat = app.hoverSeat = null;
+  app.scores = null;
   app.scene?.clearGhost();
   app.scene?.clearLegalSpots();
   app.scene?.highlightCells(null);
@@ -232,7 +236,7 @@ function renderCoach(t) {
   document.body.classList.toggle('in-tutorial', !!t);
   document.body.classList.toggle('tut-show-sb', t?.ui === '#scoreboard');
   $('coach').classList.toggle('hidden', !t);
-  if (!t) return;
+  if (!t) return applyHighlight();
   $('coach-step').textContent = `Step ${t.step} of ${t.total}`;
   if (app.coachStep !== t.step) {
     setCoachCollapsed(false); // reopen on each new step
@@ -249,7 +253,16 @@ function renderCoach(t) {
   $('coach-finish').classList.toggle('hidden', !t.finish);
   $('coach-skip').classList.toggle('hidden', t.finish);
   if (t.ui) document.querySelector(t.ui)?.classList.add('coach-glow');
-  app.scene.highlightCells(t.cells, '#ffffff');
+  applyHighlight();
+}
+
+// One place decides what the board highlights: a hovered or pinned scoreboard
+// row shows that player's largest group, otherwise the tutorial's cells.
+function applyHighlight() {
+  const seat = app.hoverSeat ?? app.pinSeat;
+  const group = seat != null ? app.scores?.[seat]?.group : null;
+  if (group) app.scene?.highlightCells(group, PLAYER_COLORS[seat]);
+  else app.scene?.highlightCells(app.coachCells, '#ffffff');
 }
 
 // ---------- audio ----------
@@ -398,19 +411,42 @@ function renderHUD() {
     const name = p.name + (i === seat ? ' (you)' : '') + (p.isAI ? ' 🤖' : '');
     row.append(el('span', 'sb-name', name));
     row.append(el('span', 'sb-score', String(scores[i].score)));
-    row.append(
+    // Phones only have room for the cards left; the rest shows on wider screens.
+    const meta = el('span', 'sb-meta');
+    meta.append(
       el(
         'span',
-        'sb-meta',
+        'sb-detail',
         `group ${scores[i].largest} · gems ${scores[i].gems}` +
           (scores[i].headStart ? ` · head start +${scores[i].headStart}` : '') +
-          ` · cards ${p.handCount + p.deckCount}`,
+          ' · ',
       ),
+      el('span', 'sb-cards', `${p.handCount + p.deckCount} cards left`),
     );
-    row.onmouseenter = () => app.scene.highlightCells(scores[i].group, PLAYER_COLORS[i]);
-    row.onmouseleave = () => app.scene.highlightCells(app.coachCells, '#ffffff');
+    row.append(meta);
+    if (app.pinSeat === i) row.classList.add('pinned');
+    row.title = 'Show largest group';
+    // Mouse: hover shows a player's largest group. Any pointer: tapping or
+    // clicking a row pins it until tapped again.
+    row.onpointerenter = (e) => {
+      if (e.pointerType !== 'mouse') return;
+      app.hoverSeat = i;
+      applyHighlight();
+    };
+    row.onpointerleave = (e) => {
+      if (e.pointerType !== 'mouse') return;
+      app.hoverSeat = null;
+      applyHighlight();
+    };
+    row.onclick = () => {
+      app.pinSeat = app.pinSeat === i ? null : i;
+      sb.querySelectorAll('.sb-row').forEach((r) => r.classList.remove('pinned'));
+      if (app.pinSeat === i) row.classList.add('pinned');
+      applyHighlight();
+    };
     sb.append(row);
   });
+  app.scores = scores;
 
   // Turn banner
   const banner = $('turn-banner');
