@@ -41,7 +41,9 @@ export class BoardScene {
     this.controls.enablePan = false;
     this.controls.maxPolarAngle = 1.25;
     this.controls.minPolarAngle = 0.15;
-    this.controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+    // Left or right drag orbits. A click that moves less than a few pixels still
+    // counts as a click (see pointerup below), so left-drag never places a card.
+    this.controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
 
     scene.add(new THREE.HemisphereLight('#dfe8ff', '#2a2218', 1.1));
     const sun = (this.sun = new THREE.DirectionalLight('#fff4e0', 2.2));

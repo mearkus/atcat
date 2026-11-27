@@ -104,7 +104,8 @@ const STEPS = [
     title: 'Scoring and the end',
     text:
       'The scoreboard keeps the live score. ' +
-      (TOUCH ? '' : '<b>Hover a player</b> to highlight their largest group. ') +
+      (TOUCH ? '<b>Tap a player</b>' : '<b>Hover over or click a player</b>') +
+      ' to highlight their largest group. ' +
       'Two more rules: stacks are at most <b>3</b> cards tall, and you can\'t <b>completely cover</b> a single card. ' +
       'When nobody can play, the highest score wins.',
     ui: '#scoreboard',
