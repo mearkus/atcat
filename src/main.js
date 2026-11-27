@@ -420,7 +420,9 @@ function renderHand() {
     handEl.append(d);
   });
   updateHandTransforms(true);
-  $('hand-actions').classList.toggle('hidden', !hand.length || view.over);
+  $('btn-undo').classList.toggle('hidden', !app.info.undo);
+  $('btn-undo').disabled = !app.info.canUndo;
+  $('hand-actions').classList.toggle('hidden', (!hand.length && !app.info.canUndo) || view.over);
   if (view.over) $('hint').textContent = '';
   else if (!hand.length) $('hint').textContent = 'Out of cards. Watch the others finish.';
 }
@@ -547,6 +549,12 @@ function onBoardClick(cell, pointerType) {
 }
 
 $('btn-rotate').onclick = () => rotate(1);
+function undo() {
+  if (!app.info?.canUndo) return;
+  app.touchPreview = null;
+  app.controller.undo();
+}
+$('btn-undo').onclick = undo;
 $('btn-confirm').onclick = () => tryPlace(app.touchPreview);
 
 window.addEventListener('keydown', (e) => {
@@ -555,7 +563,11 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'm' || e.key === 'M') audio.toggleMute();
     return;
   }
-  if (e.key === 'm' || e.key === 'M') audio.toggleMute();
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) {
+    e.preventDefault();
+    undo();
+  } else if (e.key === 'm' || e.key === 'M') audio.toggleMute();
+  else if (e.key === 'u' || e.key === 'U') undo();
   else if (e.key === 'r' || e.key === 'R') rotate(e.shiftKey ? -1 : 1);
   else if (e.key === 'Escape') {
     $('rules').classList.add('hidden');

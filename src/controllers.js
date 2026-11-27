@@ -10,13 +10,26 @@ import { chooseMove } from '../shared/ai.js';
 
 const AI_DELAY_MS = 750;
 
+// Solo difficulties that let you take back your last move. Hard stays strict.
+export const UNDO_LEVELS = ['easy', 'normal'];
+
 export class LocalController {
-  constructor({ name, opponents, difficulty }) {
+  constructor({ name, opponents, difficulty, aiDelay = AI_DELAY_MS }) {
     this.mode = 'solo';
     this.config = { name, opponents, difficulty };
+    this.aiDelay = aiDelay;
     this.onUpdate = () => {};
     this.onError = () => {};
     this.timer = null;
+    this.undoState = null; // the game as it was just before your last move
+  }
+
+  get undoAllowed() {
+    return UNDO_LEVELS.includes(this.config.difficulty);
+  }
+
+  get canUndo() {
+    return this.undoAllowed && !!this.undoState && !this.game.over;
   }
 
   start() {
@@ -25,6 +38,7 @@ export class LocalController {
     const players = [{ name: name || 'You' }];
     for (let i = 0; i < opponents; i++) players.push({ name: `Bot ${i + 1}`, isAI: true, difficulty });
     this.game = createGame({ players });
+    this.undoState = null;
     this._emit();
   }
 
@@ -37,6 +51,8 @@ export class LocalController {
       isHost: true,
       view: viewFor(g, 0),
       seats: g.players.map((p) => ({ name: p.name, isAI: p.isAI, difficulty: p.difficulty, connected: true })),
+      undo: this.undoAllowed,
+      canUndo: this.canUndo,
     });
     this._schedule();
   }
@@ -50,13 +66,24 @@ export class LocalController {
       const mv = chooseMove(g, seat, g.players[seat].difficulty);
       if (mv) applyMove(g, seat, mv);
       this._emit();
-    }, AI_DELAY_MS);
+    }, this.aiDelay);
   }
 
   submitMove(move) {
     const err = checkMove(this.game, 0, move);
     if (err) return this.onError(err);
+    // The game state is plain JSON, so a copy is a full snapshot.
+    if (this.undoAllowed) this.undoState = JSON.stringify(this.game);
     applyMove(this.game, 0, move);
+    this._emit();
+  }
+
+  /** Take back your last move, along with any bot moves made since. One step only. */
+  undo() {
+    if (!this.canUndo) return this.onError('Nothing to undo');
+    clearTimeout(this.timer);
+    this.game = JSON.parse(this.undoState);
+    this.undoState = null;
     this._emit();
   }
 
@@ -72,8 +99,10 @@ export class LocalController {
 
 // Static hosts (e.g. GitHub Pages) can't run the game server. Builds made with
 // VITE_STATIC=1 hide online play unless VITE_SERVER_URL points at a server.
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || '';
-export const ONLINE_AVAILABLE = !!SERVER_URL || !import.meta.env.VITE_STATIC;
+// (import.meta.env only exists in Vite builds; the fallback lets tests import this file.)
+const ENV = import.meta.env || {};
+const SERVER_URL = ENV.VITE_SERVER_URL || '';
+export const ONLINE_AVAILABLE = !!SERVER_URL || !ENV.VITE_STATIC;
 
 function serverUrl() {
   if (SERVER_URL) return SERVER_URL.replace(/^http/, 'ws').replace(/\/?$/, '/ws').replace(/\/ws\/ws$/, '/ws');
