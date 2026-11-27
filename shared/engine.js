@@ -30,7 +30,11 @@ export const DIRS = [
   [-1, 0],
   [0, -1],
 ];
-export const BOARD_SIZES = { 2: 7, 3: 8, 4: 9 };
+// Odd sizes only, so there is one true centre square for the first card.
+// 3 players share the 7x7 board: simulated games kept turn order as fair as
+// on the old 8x8 board (whose "centre" was half a square off) and every card
+// still gets played.
+export const BOARD_SIZES = { 2: 7, 3: 7, 4: 9 };
 
 // Head-start points by turn position (first player first), per player count.
 // Tuned with simulated games so each position wins about equally often.

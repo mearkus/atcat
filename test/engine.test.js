@@ -174,3 +174,14 @@ test('games saved without head-start data still score', () => {
   delete g.headStart;
   assert.ok(computeScores(g).every((r) => r.score === 0 && r.headStart === 0));
 });
+
+test('every board has a single centre square (odd size) for the first card', () => {
+  for (const n of [2, 3, 4]) {
+    const g = createGame({ players: Array.from({ length: n }, (_, i) => ({ name: `P${i}` })), seed: n });
+    assert.equal(g.size % 2, 1, `${n} players`);
+    const c = (g.size - 1) / 2;
+    // Covering the exact centre square is legal; the square beside it alone is not enough.
+    assert.equal(checkPlacement(g, c, c, 0), null);
+    assert.notEqual(checkPlacement(g, c + 1, c, 0), null);
+  }
+});
